@@ -83,7 +83,7 @@ module Capistrano
           bundle_cmd      = configuration[:bundle_cmd]        || "bundle"
           bundle_flags    = configuration[:bundle_flags]      || "--deployment --quiet"
           bundle_dir      = configuration[:bundle_dir]        || File.join('vendor', 'bundle')
-          bundle_gemfile  = configuration[:bundle_gemfile]    || File.join(destination, "Gemfile")
+          bundle_gemfile  = configuration[:bundle_gemfile]    || File.join("Gemfile")
           bundle_without  = [*(configuration[:bundle_without] || [:development, :test])].compact
 
           args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
@@ -92,10 +92,12 @@ module Capistrano
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           cmd = "#{bundle_cmd} install #{args.join(' ')}"
-          if defined?( Bundler )
-            Bundler.with_clean_env { system(cmd) }
-          else
-            system(cmd)
+          Dir.chdir( destination ) do
+            if defined?( Bundler )
+              Bundler.with_clean_env { system(cmd) }
+            else
+              system(cmd)
+            end
           end
         end
 
