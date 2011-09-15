@@ -91,8 +91,11 @@ module Capistrano
           args << bundle_flags.to_s
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
-          Dir.chdir(destination) do
-            system("#{bundle_cmd} install #{args.join(' ')}")
+          cmd = "#{bundle_cmd} install #{args.join(' ')}"
+          if defined?( Bundler )
+            Bundler.with_clean_env { system(cmd) }
+          else
+            system(cmd)
           end
         end
         
