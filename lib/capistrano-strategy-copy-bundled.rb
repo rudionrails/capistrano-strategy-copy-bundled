@@ -1,1 +1,5 @@
-# empty stub
+module CapistranoStrategyCopyBundled
+
+  VERSION = '0.1.0'
+  
+end

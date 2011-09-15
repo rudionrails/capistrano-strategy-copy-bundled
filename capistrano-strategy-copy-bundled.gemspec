@@ -1,9 +1,10 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
+require 'capistrano-strategy-copy-bundled'
 
 Gem::Specification.new do |s|
   s.name        = "capistrano-strategy-copy-bundled"
-  s.version     = "0.0.1"
+  s.version     =CapistranoStrategyCopyBundled::VERSION
   s.authors     = ["Rudolf Schmidt"]
   
   s.homepage    = ""
