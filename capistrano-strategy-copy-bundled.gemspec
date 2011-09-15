@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     =CapistranoStrategyCopyBundled::VERSION
   s.authors     = ["Rudolf Schmidt"]
   
-  s.homepage    = ""
+  s.homepage    = "http://github.com/rudionrails/capistrano-strategy-copy-bundled"
   s.summary     = %q{Capistrano copy recipe to transfer files already pre-bundled}
   s.description = %q{Bundled all gems in the copy directory and then send it to all servers already packaged}
 
