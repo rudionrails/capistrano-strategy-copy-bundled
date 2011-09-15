@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   
   s.homepage    = ""
   s.summary     = %q{Capistrano copy recipe to transfer files already pre-bundled}
-  s.description = %q{TODO: Write a gem description}
+  s.description = %q{Bundled all gems in the copy directory and then send it to all servers already packaged}
 
   s.rubyforge_project = "capistrano-strategy-copy-bundled"
 
