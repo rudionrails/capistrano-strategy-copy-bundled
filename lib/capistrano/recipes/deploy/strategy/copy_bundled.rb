@@ -69,9 +69,9 @@ module Capistrano
           Dir.chdir(copy_dir) { system(compress(File.basename(destination), File.basename(filename)).join(" ")) }
 
           distribute!
-        #ensure
-        #  FileUtils.rm filename rescue nil
-        #  FileUtils.rm_rf destination rescue nil
+        ensure
+          FileUtils.rm filename rescue nil
+          FileUtils.rm_rf destination rescue nil
         end
 
 
