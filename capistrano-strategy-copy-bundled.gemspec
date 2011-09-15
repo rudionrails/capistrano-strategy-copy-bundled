@@ -1,14 +1,13 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "capistrano-strategy-copy-bundled/version"
 
 Gem::Specification.new do |s|
   s.name        = "capistrano-strategy-copy-bundled"
-  s.version     = Capistrano::Strategy::Copy::Bundled::VERSION
+  s.version     = "0.0.1"
   s.authors     = ["Rudolf Schmidt"]
-  s.email       = ["me@rudionrails.com"]
+  
   s.homepage    = ""
-  s.summary     = %q{TODO: Write a gem summary}
+  s.summary     = %q{Capistrano copy recipe to transfer files already pre-bundled}
   s.description = %q{TODO: Write a gem description}
 
   s.rubyforge_project = "capistrano-strategy-copy-bundled"
@@ -20,5 +19,5 @@ Gem::Specification.new do |s|
 
   # specify any dependencies here; for example:
   # s.add_development_dependency "rspec"
-  # s.add_runtime_dependency "rest-client"
+  s.add_runtime_dependency "capistrano", "~> 2"
 end
