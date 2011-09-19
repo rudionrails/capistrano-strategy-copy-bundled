@@ -17,7 +17,7 @@ module Capistrano
               system(source.checkout(revision, copy_cache))
             end
 
-              # Check the return code of last system command and rollback if not 0
+            # Check the return code of last system command and rollback if not 0
             unless $? == 0
               raise Capistrano::Error, "shell command failed with return code #{$?}"
             end
@@ -53,7 +53,7 @@ module Capistrano
 
               copy_exclude.each do |pattern|
                 delete_list = Dir.glob(File.join(destination, pattern), File::FNM_DOTMATCH)
-                  # avoid the /.. trap that deletes the parent directories
+                # avoid the /.. trap that deletes the parent directories
                 delete_list.delete_if { |dir| dir =~ /\/\.\.$/ }
                 FileUtils.rm_rf(delete_list.compact)
               end
@@ -62,7 +62,7 @@ module Capistrano
 
           File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
 
-            # execute bundler
+          # execute bundler
           bundle!
 
           logger.trace "compressing #{destination} to #{filename}"
@@ -92,12 +92,23 @@ module Capistrano
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           cmd = "#{bundle_cmd} install #{args.join(' ')}"
-          Dir.chdir( destination ) do
-            if defined?( Bundler )
-              Bundler.with_clean_env { system(cmd) }
-            else
-              system(cmd)
-            end
+          Dir.chdir(destination) do
+            defined?( Bundler ) ? with_original_env { system(cmd) } : system(cmd)
+          end
+        end
+
+        # This method should be built-in to Bundler 1.1+
+        def with_original_env
+          original_env = ENV.to_hash
+
+          begin
+            # clean the ENV from Bundler settings
+            ENV.delete( 'RUBYOPT' )
+            ENV.keys.each { |k| ENV.delete(k) if k =~ /^bundle_/i }  #remove any BUNDLE_* keys
+
+            yield
+          ensure
+            ENV.replace( original_env )
           end
         end
 
