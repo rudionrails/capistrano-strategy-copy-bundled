@@ -4,7 +4,7 @@ require 'capistrano-strategy-copy-bundled'
 
 Gem::Specification.new do |s|
   s.name        = "capistrano-strategy-copy-bundled"
-  s.version     =CapistranoStrategyCopyBundled::VERSION
+  s.version     = CapistranoStrategyCopyBundled::VERSION
   s.authors     = ["Rudolf Schmidt"]
   
   s.homepage    = "http://github.com/rudionrails/capistrano-strategy-copy-bundled"
