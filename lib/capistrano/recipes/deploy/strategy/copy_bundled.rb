@@ -112,6 +112,12 @@ module Capistrano
           end
         end
 
+        # Distributes the file to the remote servers
+        def distribute!
+          upload( filename, remote_filename, :via => configuration[:copy_via] || :sftp )
+          run "cd #{configuration[:releases_path]} && #{decompress(remote_filename).join(" ")} && rm #{remote_filename}"
+        end
+
       end
 
     end
