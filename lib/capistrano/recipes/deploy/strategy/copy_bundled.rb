@@ -94,6 +94,9 @@ module Capistrano
           cmd = "#{bundle_cmd} install #{args.join(' ')}"
           Dir.chdir(destination) do
             defined?(Bundler) ? with_original_env { system(cmd) } : system(cmd)
+
+            # Check the return code of last system command and rollback if not 0
+            raise Capistrano::Error, "shell command failed with return code #{$?}" unless $? == 0
           end
         end
 
