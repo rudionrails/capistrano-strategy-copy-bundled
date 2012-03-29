@@ -6,7 +6,6 @@ module Capistrano
 
       class CopyBundled < Copy
 
-        # @overload
         def deploy!
           if copy_cache
             if File.exists?(copy_cache)
