@@ -5,7 +5,7 @@ require 'capistrano-strategy-copy-bundled'
 Gem::Specification.new do |s|
   s.name        = "capistrano-strategy-copy-bundled"
   s.version     = CapistranoStrategyCopyBundled::VERSION
-  s.authors     = ["Rudolf Schmidt"]
+  s.authors     = ["Rudolf Schmidt", "Tom Meier"]
 
   s.homepage    = "http://github.com/rudionrails/capistrano-strategy-copy-bundled"
   s.summary     = %q{Capistrano copy recipe to transfer files already pre-bundled}
@@ -21,4 +21,5 @@ Gem::Specification.new do |s|
   # specify any dependencies here; for example:
   # s.add_development_dependency "rspec"
   s.add_runtime_dependency "capistrano", "~> 2"
+  s.add_runtime_dependency "bundler"
 end

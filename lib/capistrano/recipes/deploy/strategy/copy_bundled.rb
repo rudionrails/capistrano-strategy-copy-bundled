@@ -1,3 +1,4 @@
+require 'bundler/deployment'
 require 'capistrano/recipes/deploy/strategy/copy'
 
 module Capistrano
@@ -7,70 +8,17 @@ module Capistrano
       class CopyBundled < Copy
 
         def deploy!
-          if copy_cache
-            if File.exists?(copy_cache)
-              logger.debug "refreshing local cache to revision #{revision} at #{copy_cache}"
-              system(source.sync(revision, copy_cache))
-            else
-              logger.debug "preparing local cache at #{copy_cache}"
-              system(source.checkout(revision, copy_cache))
-            end
+          copy_cache ? run_copy_cache_strategy : run_copy_strategy
 
-            # Check the return code of last system command and rollback if not 0
-            unless $? == 0
-              raise Capistrano::Error, "shell command failed with return code #{$?}"
-            end
+          create_revision_file
 
-            FileUtils.mkdir_p(destination)
-
-            logger.debug "copying cache to deployment staging area #{destination}"
-            Dir.chdir(copy_cache) do
-              queue = Dir.glob("*", File::FNM_DOTMATCH)
-              while queue.any?
-                item = queue.shift
-                name = File.basename(item)
-
-                next if name == "." || name == ".."
-                next if copy_exclude.any? { |pattern| File.fnmatch(pattern, item) }
-
-                if File.symlink?(item)
-                  FileUtils.ln_s(File.readlink(item), File.join(destination, item))
-                elsif File.directory?(item)
-                  queue += Dir.glob("#{item}/*", File::FNM_DOTMATCH)
-                  FileUtils.mkdir(File.join(destination, item))
-                else
-                  FileUtils.ln(item, File.join(destination, item))
-                end
-              end
-            end
-          else
-            logger.debug "getting (via #{copy_strategy}) revision #{revision} to #{destination}"
-            system(command)
-
-            if copy_exclude.any?
-              logger.debug "processing exclusions..."
-
-              copy_exclude.each do |pattern|
-                delete_list = Dir.glob(File.join(destination, pattern), File::FNM_DOTMATCH)
-                # avoid the /.. trap that deletes the parent directories
-                delete_list.delete_if { |dir| dir =~ /\/\.\.$/ }
-                FileUtils.rm_rf(delete_list.compact)
-              end
-            end
-          end
-
-          File.open(File.join(destination, "REVISION"), "w") { |f| f.puts(revision) }
-
-          # execute bundler
+          #Bundle all gems
           bundle!
 
-          logger.trace "compressing #{destination} to #{filename}"
-          Dir.chdir(copy_dir) { system(compress(File.basename(destination), File.basename(filename)).join(" ")) }
-
+          compress_repository
           distribute!
         ensure
-          FileUtils.rm filename rescue nil
-          FileUtils.rm_rf destination rescue nil
+          rollback_changes
         end
 
 
@@ -79,45 +27,35 @@ module Capistrano
         def bundle!
           logger.trace "running bundler in #{destination}..."
 
-          bundle_cmd      = configuration[:bundle_cmd]        || "bundle"
-          bundle_flags    = configuration[:bundle_flags]      || "--deployment --quiet"
-          bundle_dir      = configuration[:bundle_dir]        || File.join('vendor', 'bundle')
-          bundle_gemfile  = configuration[:bundle_gemfile]    || File.join("Gemfile")
-          bundle_without  = [*(configuration[:bundle_without] || [:development, :test])].compact
+          #Change required variables to use Bundler task
+          capture_original_config(:latest_release, :bundle_dir)
 
-          args = ["--gemfile #{bundle_gemfile}"]
-          args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
-          args << bundle_flags.to_s
-          args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
+          #Identical to bundler/capistrano.rb but running without callback in post-deploy
+          Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
+          configuration.set :rake,           lambda { "#{fetch(:bundle_cmd, "bundle")} exec rake" }
+          configuration.set :bundle_dir,     configuration.fetch(:bundle_dir, File.join(copy_cache, 'vendor/bundle'))
+          configuration.set :latest_release, copy_cache
+          configuration.find_and_execute_task('bundle:install')
 
-          cmd = "#{bundle_cmd} install #{args.join(' ')}"
-          Dir.chdir(destination) do
-            defined?(Bundler) ? with_original_env { system(cmd) } : system(cmd)
+          #Revert back key config variables
+          revert_to_original_config!
 
-            # Check the return code of last system command and rollback if not 0
-            raise Capistrano::Error, "shell command failed with return code #{$?}" unless $? == 0
+          exit
+        end
+
+        def capture_original_config(*configuration_keys)
+          configuration_keys.inject(@original_configuration = {}) do |result, config_attribute|
+            original_value = configuration.fetch(config_attribute, nil)
+            result[config_attribute] = original_value if original_value
+            result
           end
         end
 
-        # This method should be built-in to Bundler 1.1+
-        def with_original_env
-          original_env = ENV.to_hash
-
-          begin
-            # clean the ENV from Bundler settings
-            ENV.delete( 'RUBYOPT' )
-            ENV.keys.each { |k| ENV.delete(k) if k =~ /^bundle_/i }  #remove any BUNDLE_* keys
-
-            yield
-          ensure
-            ENV.replace( original_env )
+        def revert_to_original_config!
+          return unless @original_configuration
+          @original_configuration.each do |config_attribute, original_config_value|
+            configuration.set(config_attribute, original_config_value)
           end
-        end
-
-        # Distributes the file to the remote servers
-        def distribute!
-          upload( filename, remote_filename, :via => configuration[:copy_via] || :sftp )
-          run "cd #{configuration[:releases_path]} && #{decompress(remote_filename).join(" ")} && rm #{remote_filename}"
         end
 
       end
