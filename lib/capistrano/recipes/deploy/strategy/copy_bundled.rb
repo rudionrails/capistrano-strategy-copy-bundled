@@ -1,20 +1,6 @@
 require 'bundler/deployment'
 require 'capistrano/recipes/deploy/strategy/copy'
 
-# Capistrano::Configuration.instance(:must_exist).load do
-#   #before "deploy:finalize_update", "bundle:install"
-#   before "deploy:finalize_update", "strategy:bundle", "strategy:distribute"
-#   namespace :strategy do
-#     task :bundle do
-#       puts "YO"
-#     end
-
-#     task :distribute do
-#       puts "Distributing"
-#     end
-#   end
-# end
-
 module Capistrano
   module Deploy
     module Strategy
@@ -22,7 +8,7 @@ module Capistrano
       class CopyBundled < Copy
 
         def deploy!
-          logger.trace "running :copy_bundled strategy"
+          logger.info "running :copy_bundled strategy"
 
           copy_cache ? run_copy_cache_strategy : run_copy_strategy
 
@@ -33,11 +19,14 @@ module Capistrano
           bundle!
           configuration.trigger('strategy:after:bundle')
 
-          logger.trace "compressing repository"
+
+          logger.info "compressing repository"
+          configuration.trigger('strategy:before:compression')
           compress_repository
+          configuration.trigger('strategy:after:compression')
 
 
-          logger.trace "distributing package"
+          logger.info "distributing packaged repository"
 
           configuration.trigger('strategy:before:distrubute')
           distribute!
@@ -50,7 +39,7 @@ module Capistrano
         private
 
         def bundle!
-          logger.trace "running bundler in #{destination}..."
+          logger.info "packaging gems for bundler in #{destination}..."
 
           #Change required variables to use Bundler task
           capture_original_config(:latest_release, :bundle_dir)

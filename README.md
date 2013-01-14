@@ -45,9 +45,11 @@ Additionally to that, you can set the usual options when using the regular :copy
 set :copy_dir,      "/tmp/#{application}"   # path where files are temporarily put before sending them to the servers
 set :copy_exclude,  ".git*"                 # we exclude the .git repo so that nobody is able to temper with the release
 
-#Callback triggers to add your own steps within
+#Callback triggers to add your own steps within (in order)
 on 'strategy:before:bundle',      'some:custom:task'
 on 'strategy:after:bundle',       'some:custom:task'
+on 'strategy:before:compression', 'some:custom:task'
+on 'strategy:after:compression',  'some:custom:task'
 on 'strategy:before:distribute',  'some:custom:task'
 on 'strategy:after:distribute',   'some:custom:task'
 ```
