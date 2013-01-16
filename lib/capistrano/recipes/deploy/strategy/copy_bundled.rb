@@ -16,7 +16,8 @@ module Capistrano
 
           configuration.trigger('strategy:before:bundle')
           #Bundle all gems
-          bundle!
+
+          Dir.chdir(copy_cache) { bundle! }
           configuration.trigger('strategy:after:bundle')
 
 
@@ -42,12 +43,12 @@ module Capistrano
           logger.info "packaging gems for bundler in #{destination}..."
 
           #Change required variables to use Bundler task
-          capture_original_config(:latest_release, :bundle_dir)
+          capture_original_config(:rake, :latest_release, :bundle_dir)
 
           #Identical to bundler/capistrano.rb but running without callback in post-deploy
           Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
           configuration.set :rake,           lambda { "#{fetch(:bundle_cmd, "bundle")} exec rake" }
-          configuration.set :bundle_dir,     configuration.fetch(:bundle_dir, File.join(copy_cache, 'vendor/bundle'))
+          configuration.set :bundle_dir,     configuration.fetch(:bundle_dir, 'vendor/bundle')
           configuration.set :latest_release, copy_cache
           configuration.find_and_execute_task('bundle:install')
 
