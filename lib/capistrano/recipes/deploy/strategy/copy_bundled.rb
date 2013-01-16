@@ -16,7 +16,7 @@ module Capistrano
 
           configuration.trigger('strategy:before:bundle')
           #Bundle all gems
-          Dir.chdir(copy_cache) { bundle! }
+          bundle!
           configuration.trigger('strategy:after:bundle')
 
 
@@ -40,7 +40,9 @@ module Capistrano
 
         def bundle!
           logger.info "packaging gems for bundler in #{destination}..."
-          Bundler.with_clean_env { run "#{configuration.fetch(:bundle_cmd, 'bundle')} package --all" }
+          Bundler.with_clean_env do
+            run "cd #{copy_cache} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
+          end
         end
       end
 
