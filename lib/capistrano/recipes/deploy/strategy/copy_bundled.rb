@@ -39,7 +39,7 @@ module Capistrano
         private
 
         def bundle!
-#          logger.info "packaging gems for bundler in #{destination}..."
+          logger.info "packaging gems for bundler in #{destination}..."
           Bundler.with_clean_env do
             run "cd #{copy_cache} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
           end

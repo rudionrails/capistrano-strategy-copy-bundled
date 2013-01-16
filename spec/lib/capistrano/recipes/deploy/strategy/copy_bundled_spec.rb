@@ -5,23 +5,20 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   let(:source) { mock('source') }
   let(:logger) { mock('logger', :info => true, :debug => true) }
   let(:trigger) { mock('ConfTrigger') }
-  let(:config) { mock('Config', { :application => "captest",
+  let(:config) { mock('Config', :application => "captest",
                         :releases_path => "/u/apps/test/releases",
                         :release_path => "/u/apps/test/releases/1234567890",
                         :real_revision => "154",
-                        :destination => '/u/apps/deployed/',
-                        :logger => logger,
                         :trigger => trigger
-                  } )}
+                   )}
   let(:strategy) { Capistrano::Deploy::Strategy::CopyBundled.new(config) }
 
   before do
-    strategy.stub(:logger) { logger }
-
     #Key base class copy commands
     [:create_revision_file,  :compress_repository, :distribute!, :rollback_changes].each do |main_call|
       strategy.should_receive(main_call).once
     end
+    logger.should_receive(:info).at_least(3).times
     strategy.stub(:bundle!)
     strategy.stub(:copy_cache => nil, :run_copy_strategy => true)
   end
@@ -73,7 +70,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     before do
       strategy.unstub(:bundle!)
       strategy.stub(:run)
-      strategy.stub!(:copy_cache => copy_cache_dir)
+      strategy.stub!(:copy_cache => copy_cache_dir, :copy_dir => copy_cache_dir)
       strategy.stub(:run_copy_cache_strategy)
     end
 
@@ -88,6 +85,8 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   end
 
   after do
+    strategy.stub(:logger) { logger }
+    strategy.stub(:destination) { '/some/where/here/'}
     strategy.deploy!
   end
 
