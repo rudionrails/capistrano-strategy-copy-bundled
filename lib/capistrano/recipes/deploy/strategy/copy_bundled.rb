@@ -16,7 +16,6 @@ module Capistrano
 
           configuration.trigger('strategy:before:bundle')
           #Bundle all gems
-
           Dir.chdir(copy_cache) { bundle! }
           configuration.trigger('strategy:after:bundle')
 
@@ -41,36 +40,8 @@ module Capistrano
 
         def bundle!
           logger.info "packaging gems for bundler in #{destination}..."
-
-          #Change required variables to use Bundler task
-          capture_original_config(:rake, :latest_release, :bundle_dir)
-
-          #Identical to bundler/capistrano.rb but running without callback in post-deploy
-          Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
-          configuration.set :rake,           lambda { "#{fetch(:bundle_cmd, "bundle")} exec rake" }
-          configuration.set :bundle_dir,     configuration.fetch(:bundle_dir, 'vendor/bundle')
-          configuration.set :latest_release, copy_cache
-          configuration.find_and_execute_task('bundle:install')
-
-          #Revert back key config variables
-          revert_to_original_config!
+          Bundler.with_clean_env { run "#{configuration.fetch(:bundle_cmd, 'bundle')} package --all" }
         end
-
-        def capture_original_config(*configuration_keys)
-          configuration_keys.inject(@original_configuration = {}) do |result, config_attribute|
-            original_value = configuration.fetch(config_attribute, nil)
-            result[config_attribute] = original_value if original_value
-            result
-          end
-        end
-
-        def revert_to_original_config!
-          return unless @original_configuration
-          @original_configuration.each do |config_attribute, original_config_value|
-            configuration.set(config_attribute, original_config_value)
-          end
-        end
-
       end
 
     end

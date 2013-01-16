@@ -21,5 +21,5 @@ Gem::Specification.new do |s|
   # specify any dependencies here; for example:
   # s.add_development_dependency "rspec"
   s.add_runtime_dependency "capistrano", "~> 2"
-  s.add_runtime_dependency "bundler"
+  s.add_runtime_dependency "bundler", ">= 1.2" #Required for package --all
 end
