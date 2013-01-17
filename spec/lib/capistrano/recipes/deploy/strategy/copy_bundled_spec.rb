@@ -2,9 +2,10 @@ require 'spec_helper'
 
 describe Capistrano::Deploy::Strategy::CopyBundled do
 
-  let(:source) { mock('source') }
-  let(:logger) { mock('logger', :info => true, :debug => true) }
-  let(:trigger) { mock('ConfTrigger') }
+  let(:source)      { mock('source') }
+  let(:logger)      { mock('logger', :info => true, :debug => true) }
+  let(:trigger)     { mock('ConfTrigger') }
+  let(:destination) { '/some/where/here/' }
   let(:config) { mock('Config', :application => "captest",
                         :releases_path => "/u/apps/test/releases",
                         :release_path => "/u/apps/test/releases/1234567890",
@@ -69,14 +70,31 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
 
     before do
       strategy.unstub(:bundle!)
-      strategy.stub(:run)
-      strategy.stub!(:copy_cache => copy_cache_dir, :copy_dir => copy_cache_dir)
-      strategy.stub(:run_copy_cache_strategy)
+
+      Bundler::Deployment.should_receive(:define_task).once
+
+      strategy.stub(:run_copy_cache_strategy => true, :run => true)
+      Dir.should_receive(:chdir).once.with(destination).and_yield
+
+      config.stub(:fetch)
+      config.stub(:find_and_execute_task) { true }
+      config.stub(:set) { true }
     end
 
-    it 'packages ruby gems into cache directory' do
+    it 'runs bundle install before packaging to ensure a local install using the default task' do
+      config.stub(:fetch).with(:bundle_dir, 'vendor/bundle') { 'vendor/bundle' }
+
+      config.should_receive(:set).with(:rake, anything).once { true }
+      config.should_receive(:set).with(:bundle_dir).once.with(:bundle_dir, 'vendor/bundle') { true }
+      config.should_receive(:set).with(:latest_release).once.with(:latest_release, destination) { true }
+      config.should_receive(:find_and_execute_task).with('bundle:install').once
+
+      strategy.should_receive(:run).once
+    end
+
+    it 'packages ruby gems into destination directory' do
       config.should_receive(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
-      strategy.should_receive(:run).with("cd #{copy_cache_dir} && ANY_VAR=true bundle package --all").once
+      strategy.should_receive(:run).with("cd #{destination} && ANY_VAR=true bundle package --all").once
     end
 
     it 'runs within a clean environment' do
@@ -86,7 +104,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
 
   after do
     strategy.stub(:logger) { logger }
-    strategy.stub(:destination) { '/some/where/here/'}
+    strategy.stub(:destination) { destination }
     strategy.deploy!
   end
 
