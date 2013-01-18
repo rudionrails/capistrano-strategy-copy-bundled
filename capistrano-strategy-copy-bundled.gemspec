@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require 'capistrano-strategy-copy-bundled'
+require 'capistrano-strategy-copy-bundled/version'
 
 Gem::Specification.new do |s|
   s.name        = "capistrano-strategy-copy-bundled"
