@@ -33,7 +33,7 @@ module Capistrano
           distribute!
           configuration.trigger('strategy:after:distrubute')
         ensure
-         rollback_changes
+          rollback_changes
         end
 
 
