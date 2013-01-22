@@ -55,8 +55,8 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
                             "strategy:after:bundle",
                             "strategy:before:compression",
                             "strategy:after:compression",
-                            "strategy:before:distrubute",
-                            "strategy:after:distrubute"]
+                            "strategy:before:distribute",
+                            "strategy:after:distribute"]
 
       expected_triggers.each do |trigger_name|
         config.should_receive(:trigger).with(trigger_name).once

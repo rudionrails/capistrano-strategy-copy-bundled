@@ -29,9 +29,9 @@ module Capistrano
 
           logger.info "distributing packaged repository"
 
-          configuration.trigger('strategy:before:distrubute')
+          configuration.trigger('strategy:before:distribute')
           distribute!
-          configuration.trigger('strategy:after:distrubute')
+          configuration.trigger('strategy:after:distribute')
         ensure
           rollback_changes
         end
