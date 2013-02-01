@@ -8,6 +8,14 @@ module Capistrano
 
       class CopyBundled < Copy
 
+        def initialize(config = {})
+          super(config)
+
+          #Initialize with default bundler/capistrano tasks (bundle:install)
+          configuration.set :rake, lambda { "#{configuration.fetch(:bundle_cmd, "bundle")} exec rake" }
+          Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
+        end
+
         def deploy!
           logger.info "running :copy_bundled strategy"
 
@@ -19,7 +27,6 @@ module Capistrano
           #Bundle all gems
           bundle!
           configuration.trigger('strategy:after:bundle')
-
 
           logger.info "compressing repository"
           configuration.trigger('strategy:before:compression')
@@ -36,48 +43,26 @@ module Capistrano
           rollback_changes
         end
 
-
         private
 
         def bundle!
-          #Change required variables to use default Bundler task
-          capture_original_config(:rake, :bundle_dir, :latest_release)
+          bundle_cmd      = configuration.fetch(:bundle_cmd, "bundle")
+          bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
+          bundle_dir      = configuration.fetch(:bundle_dir, 'vendor/bundle')
+          bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
+          bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
 
-          logger.info "installing gems to local cache : #{destination}..."
-
-          #Identical to bundler/capistrano.rb but running without callback in post-deploy (unneccesary)
-          # but still provides the bundle:install task
-          Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
-          configuration.set :rake,           lambda { "#{fetch(:bundle_cmd, "bundle")} exec rake" }
-          configuration.set :bundle_dir,     configuration.fetch(:bundle_dir, 'vendor/bundle')
-          configuration.set :latest_release, destination
-
-          Dir.chdir(destination) do
-            configuration.find_and_execute_task('bundle:install')
-          end
-
-          #Revert back any altered config variables
-          revert_to_original_config!
-
-          logger.info "packaging gems for bundler in #{destination}..."
+          args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
+          args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
+          args << bundle_flags.to_s
+          args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           Bundler.with_clean_env do
+            logger.info "installing gems to local cache : #{destination}..."
+            run_locally "cd #{destination} && #{bundle_cmd} install #{args.join(' ').strip}"
+
+            logger.info "packaging gems for bundler in #{destination}..."
             run_locally "cd #{destination} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
-          end
-        end
-
-        def capture_original_config(*configuration_keys)
-          configuration_keys.inject(@original_configuration = {}) do |result, config_attribute|
-            original_value = configuration.fetch(config_attribute, nil)
-            result[config_attribute] = original_value if original_value
-            result
-          end
-        end
-
-        def revert_to_original_config!
-          return unless @original_configuration
-          @original_configuration.each do |config_attribute, original_config_value|
-            configuration.set(config_attribute, original_config_value)
           end
         end
       end

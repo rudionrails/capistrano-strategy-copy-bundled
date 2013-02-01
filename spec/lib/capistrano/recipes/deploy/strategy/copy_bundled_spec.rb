@@ -15,6 +15,10 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   let(:strategy) { Capistrano::Deploy::Strategy::CopyBundled.new(config) }
 
   before do
+    #Initialisation
+    config.should_receive(:set).with(:rake, anything).once { true }
+    Bundler::Deployment.should_receive(:define_task).once
+
     #Key base class copy commands
     [:create_revision_file,  :compress_repository, :distribute!, :rollback_changes].each do |main_call|
       strategy.should_receive(main_call).once
@@ -49,8 +53,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   end
 
   context 'triggers' do
-
-    it 'triggers custom calls during actions' do
+    it 'custom calls during actions' do
       expected_triggers = [ "strategy:before:bundle",
                             "strategy:after:bundle",
                             "strategy:before:compression",
@@ -65,40 +68,28 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   end
 
   context 'bundle!' do
-    let(:copy_cache_dir) { '/u/tmp/copy-cache' }
     let(:custom_bundle_cmd) { 'ANY_VAR=true bundle' }
 
     before do
       strategy.unstub(:bundle!)
-
-      Bundler::Deployment.should_receive(:define_task).once
-
       strategy.stub(:run_copy_cache_strategy => true, :run => true)
-      Dir.should_receive(:chdir).once.with(destination).and_yield
 
       config.stub(:fetch)
-      config.stub(:find_and_execute_task) { true }
-      config.stub(:set) { true }
+      config.stub(:fetch).with(:bundle_gemfile, 'Gemfile')    { 'Gemfile' }
+      config.stub(:fetch).with(:bundle_dir, 'vendor/bundle')  { 'vendor/bundle' }
+      config.stub(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
+
+      Bundler.should_receive(:with_clean_env).once.and_yield
     end
 
-    it 'runs bundle install before packaging to ensure a local install using the default task' do
-      config.stub(:fetch).with(:bundle_dir, 'vendor/bundle') { 'vendor/bundle' }
-
-      config.should_receive(:set).with(:rake, anything).once { true }
-      config.should_receive(:set).with(:bundle_dir).once.with(:bundle_dir, 'vendor/bundle') { true }
-      config.should_receive(:set).with(:latest_release).once.with(:latest_release, destination) { true }
-      config.should_receive(:find_and_execute_task).with('bundle:install').once
-
-      strategy.should_receive(:run).once
+    it 'runs bundle install locally with enforced local variables' do
+      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --path vendor/bundle").once
+      strategy.should_receive(:run_locally).with(anything)
     end
 
-    it 'packages ruby gems into destination directory' do
-      config.should_receive(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
-      strategy.should_receive(:run).with("cd #{destination} && ANY_VAR=true bundle package --all").once
-    end
-
-    it 'runs within a clean environment' do
-      Bundler.should_receive(:with_clean_env).once
+    it 'packages ruby gems into destination directory after local install' do
+      strategy.should_receive(:run_locally).with(anything)
+      strategy.should_receive(:run_locally).with("cd #{destination} && ANY_VAR=true bundle package --all").once
     end
   end
 
