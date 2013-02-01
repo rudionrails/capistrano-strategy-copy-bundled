@@ -62,7 +62,7 @@ module Capistrano
           logger.info "packaging gems for bundler in #{destination}..."
 
           Bundler.with_clean_env do
-            run "cd #{destination} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
+            run_locally "cd #{destination} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
           end
         end
 
