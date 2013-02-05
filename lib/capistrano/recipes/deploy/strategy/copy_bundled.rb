@@ -54,7 +54,7 @@ module Capistrano
 
           args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
           args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
-          args << bundle_flags.to_s
+          args << bundle_flags.to_s unless bundle_flags.to_s.empty?
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           Bundler.with_clean_env do
