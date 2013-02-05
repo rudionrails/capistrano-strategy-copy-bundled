@@ -7,12 +7,12 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   let(:trigger)     { mock('ConfTrigger') }
   let(:destination) { '/some/where/here/' }
   let(:config) { mock('Config', :application => "captest",
-                        :releases_path => "/u/apps/test/releases",
-                        :release_path => "/u/apps/test/releases/1234567890",
-                        :real_revision => "154",
-                        :trigger => trigger,
-                        :exists? => false
-                   )}
+                      :releases_path => "/u/apps/test/releases",
+                      :release_path => "/u/apps/test/releases/1234567890",
+                      :real_revision => "154",
+                      :trigger => trigger,
+                      :exists? => false
+                      )}
   let(:strategy) { Capistrano::Deploy::Strategy::CopyBundled.new(config) }
 
   before do
@@ -76,15 +76,23 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
       strategy.stub(:run_copy_cache_strategy => true, :run => true)
 
       config.stub(:fetch)
+      config.stub(:fetch).with(:bundle_dir, 'vendor/bundle')  { 'vendor/bundle' }
       config.stub(:fetch).with(:bundle_gemfile, 'Gemfile')    { 'Gemfile' }
       config.stub(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
 
       Bundler.should_receive(:with_clean_env).once.and_yield
     end
 
-    it 'runs bundle install locally with enforced local variables for standalone deploy' do
-      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --standalone --binstubs").once
+    it 'runs bundle install locally with enforced local variables' do
+      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --path vendor/bundle").once
+      strategy.should_receive(:run_locally).with(anything)
     end
+
+    it 'packages ruby gems into destination directory after local install' do
+      strategy.should_receive(:run_locally).with(anything)
+      strategy.should_receive(:run_locally).with("cd #{destination} && ANY_VAR=true bundle package --all").once
+    end
+
   end
 
   after do
@@ -92,5 +100,4 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     strategy.stub(:destination) { destination }
     strategy.deploy!
   end
-
 end
