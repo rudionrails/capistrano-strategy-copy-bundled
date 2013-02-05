@@ -12,7 +12,7 @@ module Capistrano
           super(config)
 
           #Initialize with default bundler/capistrano tasks (bundle:install)
-          configuration.set :rake, lambda { "#{configuration.fetch(:bundle_cmd, "bundle")} exec rake" }
+          configuration.set :rake, lambda { "#{configuration.fetch(:bundle_cmd, "bundle")} exec rake" } unless configuration.exists?(:rake)
           Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
         end
 

@@ -10,7 +10,8 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
                         :releases_path => "/u/apps/test/releases",
                         :release_path => "/u/apps/test/releases/1234567890",
                         :real_revision => "154",
-                        :trigger => trigger
+                        :trigger => trigger,
+                        :exists? => false
                    )}
   let(:strategy) { Capistrano::Deploy::Strategy::CopyBundled.new(config) }
 
