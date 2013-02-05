@@ -76,20 +76,13 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
 
       config.stub(:fetch)
       config.stub(:fetch).with(:bundle_gemfile, 'Gemfile')    { 'Gemfile' }
-      config.stub(:fetch).with(:bundle_dir, 'vendor/bundle')  { 'vendor/bundle' }
       config.stub(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
 
       Bundler.should_receive(:with_clean_env).once.and_yield
     end
 
-    it 'runs bundle install locally with enforced local variables' do
-      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --path vendor/bundle").once
-      strategy.should_receive(:run_locally).with(anything)
-    end
-
-    it 'packages ruby gems into destination directory after local install' do
-      strategy.should_receive(:run_locally).with(anything)
-      strategy.should_receive(:run_locally).with("cd #{destination} && ANY_VAR=true bundle package --all").once
+    it 'runs bundle install locally with enforced local variables for standalone deploy' do
+      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --standalone --binstubs").once
     end
   end
 

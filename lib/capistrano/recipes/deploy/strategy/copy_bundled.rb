@@ -48,21 +48,18 @@ module Capistrano
         def bundle!
           bundle_cmd      = configuration.fetch(:bundle_cmd, "bundle")
           bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
-          bundle_dir      = configuration.fetch(:bundle_dir, 'vendor/bundle')
           bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
           bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
 
+
           args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
-          args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
+          args << "--standalone --binstubs"
           args << bundle_flags.to_s
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           Bundler.with_clean_env do
-            logger.info "installing gems to local cache : #{destination}..."
+            logger.info "installing standalone bundle package (no bundle exec required) : #{destination}..."
             run_locally "cd #{destination} && #{bundle_cmd} install #{args.join(' ').strip}"
-
-            logger.info "packaging gems for bundler in #{destination}..."
-            run_locally "cd #{destination} && #{configuration.fetch(:bundle_cmd, 'bundle')} package --all"
           end
         end
       end
