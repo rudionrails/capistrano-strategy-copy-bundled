@@ -48,9 +48,8 @@ module Capistrano
         def bundle!
           bundle_cmd      = configuration.fetch(:bundle_cmd, "bundle")
           bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
-          bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
+          bundle_flags    = configuration.fetch(:bundle_flags, "--quiet")
           bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
-
 
           args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
           args << "--standalone --binstubs"
