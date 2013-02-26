@@ -50,10 +50,9 @@ module Capistrano
           bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
           bundle_dir      = configuration.fetch(:bundle_dir, 'vendor/bundle')
           bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
-          bundle_without  = [*configuration.fetch(:bundle_without, [:development, :test])].compact
-          bundle_cache    = copy_cache ? copy_cache : destination
+          bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
 
-          args = ["--gemfile #{File.join(bundle_cache, bundle_gemfile)}"]
+          args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
           args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
           args << bundle_flags.to_s unless bundle_flags.to_s.empty?
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?

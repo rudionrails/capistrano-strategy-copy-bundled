@@ -53,40 +53,23 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     let(:copy_cache_dir) { '/u/tmp/copy-cache' }
     before do
       strategy.stub!(:copy_cache => copy_cache_dir)
-      strategy.should_receive(:run_copy_cache_strategy).once
     end
 
     it 'utilises existing copy cache strategy' do
+      strategy.should_receive(:run_copy_cache_strategy).once
       strategy.should_not_receive(:run_copy_strategy)
-      strategy.deploy!
-    end
-
-    it 'uses copy cache for bundling gems' do
-      config.stub(:fetch).with(:bundle_gemfile, 'Gemfile')    { 'Gemfile' }
-
-      strategy.should_receive(:run_locally).with(/--gemfile #{File.join(copy_cache_dir, 'Gemfile')}/).once
-      strategy.should_receive(:run_locally).with(anything) #packaging
       strategy.deploy!
     end
   end
 
-  context 'with no copy cache' do
+  context 'with new copy cache' do
     before do
       strategy.stub!(:copy_cache => nil)
-      strategy.should_receive(:run_copy_strategy).once
     end
 
     it 'initialises copy strategy' do
+      strategy.should_receive(:run_copy_strategy).once
       strategy.should_not_receive(:run_copy_cache_strategy)
-      strategy.deploy!
-    end
-
-    it 'uses default destination for bundling gems' do
-      config.stub(:fetch).with(:bundle_gemfile, 'Gemfile') { 'Gemfile' }
-      strategy.stub(:destination) { destination }
-
-      strategy.should_receive(:run_locally).with(/--gemfile #{File.join(destination, 'Gemfile')}/)
-      strategy.should_receive(:run_locally).with(anything) #packaging
       strategy.deploy!
     end
   end
