@@ -1,4 +1,4 @@
-module CapistranoStrategyCopyBundled
-  VERSION = '0.6.0'
-  
-end
+module CapistranoStrategyCopyBundled;  end
+
+require 'capistrano-strategy-copy-bundled/version'
+require 'capistrano/recipes/deploy/strategy/copy_bundled'
