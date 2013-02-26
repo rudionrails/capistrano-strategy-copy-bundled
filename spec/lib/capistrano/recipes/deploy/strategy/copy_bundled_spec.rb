@@ -54,6 +54,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     before do
       strategy.stub!(:copy_cache => copy_cache_dir)
       strategy.should_receive(:run_copy_cache_strategy).once
+      strategy.should_receive(:copy_bundled_cache!).once
     end
 
     it 'utilises existing copy cache strategy' do
@@ -74,6 +75,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     before do
       strategy.stub!(:copy_cache => nil)
       strategy.should_receive(:run_copy_strategy).once
+      strategy.should_not_receive(:copy_bundled_cache!)
     end
 
     it 'initialises copy strategy' do
