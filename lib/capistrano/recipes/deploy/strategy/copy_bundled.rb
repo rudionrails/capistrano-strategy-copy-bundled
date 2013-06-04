@@ -12,7 +12,7 @@ module Capistrano
           super(config)
 
           #Initialize with default bundler/capistrano tasks (bundle:install)
-          configuration.set :rake, lambda { "#{configuration.fetch(:bundle_cmd, "bundle")} exec rake" } unless configuration.exists?(:rake)
+          configuration.set :rake, lambda { "#{configuration.fetch(:local_bundle_cmd, 'bundle')} exec rake" } unless configuration.exists?(:rake)
           Bundler::Deployment.define_task(configuration, :task, :except => { :no_release => true })
         end
 
@@ -46,11 +46,11 @@ module Capistrano
         private
 
         def bundle!
-          bundle_cmd      = configuration.fetch(:bundle_cmd, "bundle")
-          bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
-          bundle_dir      = configuration.fetch(:bundle_dir, 'vendor/bundle')
-          bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
-          bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
+          bundle_cmd      = configuration.fetch(:local_bundle_cmd, 'bundle')
+          bundle_gemfile  = configuration.fetch(:local_bundle_gemfile, 'Gemfile')
+          bundle_dir      = configuration.fetch(:local_bundle_dir, 'vendor/bundle')
+          bundle_flags    = configuration.fetch(:local_bundle_flags, '--deployment --quiet')
+          bundle_without = [*configuration.fetch(:local_bundle_without, [:development, :test])].compact
 
           args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
           args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
