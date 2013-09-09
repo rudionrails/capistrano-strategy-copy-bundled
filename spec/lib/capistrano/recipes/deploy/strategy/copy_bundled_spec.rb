@@ -2,11 +2,13 @@ require 'spec_helper'
 
 describe Capistrano::Deploy::Strategy::CopyBundled do
 
-  let(:source)      { mock('source') }
-  let(:logger)      { mock('logger', :info => true, :debug => true) }
-  let(:trigger)     { mock('ConfTrigger') }
-  let(:destination) { '/some/where/here/' }
-  let(:config) { mock('Config', :application => "captest",
+  let(:source)        { double('source') }
+  let(:logger)        { double('logger', :info => true, :debug => true) }
+  let(:trigger)       { double('ConfTrigger') }
+  let(:destination)   { '/some/where/here/' }
+  let(:bundle_cache)  { false }
+  let(:bundle_package){ false }
+  let(:config) { double('Config', :application => "captest",
                       :releases_path => "/u/apps/test/releases",
                       :release_path => "/u/apps/test/releases/1234567890",
                       :real_revision => "154",
@@ -23,7 +25,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     #Initialisation
     Bundler::Deployment.should_receive(:define_task).once
 
-    [:copy_cache, :run_copy_strategy, :run_locally, :run].each do |method_call|
+    [ :copy_cache, :run_copy_strategy, :run_locally, :run ].each do |method_call|
       Capistrano::Deploy::Strategy::CopyBundled.any_instance.stub(method_call) { nil }
     end
 
@@ -31,6 +33,8 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
     [:create_revision_file,  :compress_repository, :distribute!, :rollback_changes].each do |main_call|
       Capistrano::Deploy::Strategy::CopyBundled.any_instance.should_receive(main_call).once
     end
+
+    Dir.stub(:chdir)
   end
 
   context 'rake definition' do
@@ -52,7 +56,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   context 'with existing copy cache' do
     let(:copy_cache_dir) { '/u/tmp/copy-cache' }
     before do
-      strategy.stub!(:copy_cache => copy_cache_dir)
+      strategy.stub(:copy_cache => copy_cache_dir)
     end
 
     it 'utilises existing copy cache strategy' do
@@ -64,7 +68,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
 
   context 'with new copy cache' do
     before do
-      strategy.stub!(:copy_cache => nil)
+      strategy.stub(:copy_cache => nil)
     end
 
     it 'initialises copy strategy' do
@@ -91,7 +95,10 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   end
 
   context 'bundle!' do
-    let(:custom_bundle_cmd) { 'ANY_VAR=true bundle' }
+    let(:custom_bundle_cmd)         { 'ANY_VAR=true bundle' }
+    let(:expected_install_command)  do
+      "#{custom_bundle_cmd} install --gemfile '#{File.join(destination, 'Gemfile')}' --path vendor/bundle --without development test staging"
+    end
 
     before do
       strategy.stub(:run_copy_cache_strategy => true, :run => true, :destination => destination)
@@ -100,13 +107,46 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
       config.stub(:fetch).with(:bundle_gemfile, 'Gemfile')    { 'Gemfile' }
       config.stub(:fetch).with(:bundle_cmd, 'bundle' ) { custom_bundle_cmd }
       config.stub(:fetch).with(:bundle_without, [:development, :test]) { [:development, :test, :staging] }
+      config.stub(:fetch).with(:bundle_cache, false) { bundle_cache }
+      config.stub(:fetch).with(:bundle_package, false) { bundle_package }
 
       Bundler.should_receive(:with_clean_env).once.and_yield
     end
 
-    it 'runs bundle install locally and package' do
-      strategy.should_receive(:run_locally).with("cd #{destination} && #{custom_bundle_cmd} install --gemfile #{File.join(destination, 'Gemfile')} --path vendor/bundle --without development test staging").once
-      strategy.should_receive(:run_locally).with("cd #{destination} && ANY_VAR=true bundle package --all").once
+    context "by default" do
+      it 'runs bundle install only' do
+        Dir.should_receive(:chdir).with(destination).once.and_yield
+        strategy.should_receive(:system).with(expected_install_command).once
+      end
+    end
+
+    context "with bundle cache" do
+      let(:bundle_cache) { '/tmp/bundler-cache' }
+      it 'runs bundle install with cache directory' do
+        Dir.should_receive(:chdir).with(destination).twice.and_yield
+        strategy.should_receive(:system).with("mkdir -p #{bundle_cache} && ln -s #{bundle_cache} #{destination}vendor/bundle").once
+        strategy.should_receive(:system).with(expected_install_command).once
+      end
+    end
+
+    context "with bundle package" do
+      let(:bundle_package) { true }
+
+      it 'runs bundle install with package' do
+        Dir.should_receive(:chdir).with(destination).twice.and_yield
+        strategy.should_receive(:system).with(expected_install_command).once
+        strategy.should_receive(:system).with("ANY_VAR=true bundle package --all").once
+      end
+    end
+
+    context "with both package and cache" do
+      let(:bundle_package) { true }
+      let(:bundle_cache) { true }
+
+      it 'runs bundle install and all options' do
+        Dir.should_receive(:chdir).with(destination).exactly(3).times.and_yield
+        strategy.should_receive(:system).exactly(3).times
+      end
     end
 
     after do

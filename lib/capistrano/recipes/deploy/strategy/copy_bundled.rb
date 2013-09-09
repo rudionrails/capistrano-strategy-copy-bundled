@@ -45,24 +45,58 @@ module Capistrano
 
         private
 
-        def bundle!
-          bundle_cmd      = configuration.fetch(:bundle_cmd, "bundle")
-          bundle_gemfile  = configuration.fetch(:bundle_gemfile, "Gemfile")
-          bundle_dir      = configuration.fetch(:bundle_dir, 'vendor/bundle')
-          bundle_flags    = configuration.fetch(:bundle_flags, "--deployment --quiet")
-          bundle_without = [*configuration.fetch(:bundle_without, [:development, :test])].compact
+        def bundle_cache_dir
+          @bundle_cache_dir ||= configuration.fetch(:bundle_cache, false)
+        end
 
-          args = ["--gemfile #{File.join(destination, bundle_gemfile)}"]
+        def bundle!
+          bundle_cmd        = configuration.fetch(:bundle_cmd, "bundle")
+          bundle_gemfile    = configuration.fetch(:bundle_gemfile, "Gemfile")
+          bundle_dir        = configuration.fetch(:bundle_dir, 'vendor/bundle')
+          bundle_flags      = configuration.fetch(:bundle_flags, "--deployment --quiet")
+          bundle_without    = [*configuration.fetch(:bundle_without, [:development, :test])].compact
+          bundle_package    = configuration.fetch(:bundle_package, false)
+
+          args = ["--gemfile '#{File.join(destination, bundle_gemfile)}'"]
           args << "--path #{bundle_dir}" unless bundle_dir.to_s.empty?
           args << bundle_flags.to_s unless bundle_flags.to_s.empty?
           args << "--without #{bundle_without.join(" ")}" unless bundle_without.empty?
 
           Bundler.with_clean_env do
-            logger.info "installing gems to local cache : #{destination}..."
-            run_locally "cd #{destination} && #{bundle_cmd} install #{args.join(' ').strip}"
+            if bundle_cache_dir
+              execute "symlinking bundle cache : #{bundle_cache_dir} -> #{bundle_dir}..." do
+                create_dir    = "mkdir -p #{bundle_cache_dir}"
+                symlink_cache = "ln -s #{bundle_cache_dir} #{File.join(destination, bundle_dir)}"
+                Dir.chdir(destination) { system("#{create_dir} && #{symlink_cache}") }
+              end
+            end
 
-            logger.info "packaging gems for bundler in #{destination}..."
-            run_locally "cd #{destination} && #{bundle_cmd} package --all"
+            execute "installing gems to local cache : #{destination}..." do
+              Dir.chdir(destination) { system("#{bundle_cmd} install #{args.join(' ').strip}") }
+            end
+
+            if bundle_package
+              execute "packaging gems for bundler in #{destination}..." do
+                Dir.chdir(destination) { system("#{bundle_cmd} package --all") }
+              end
+            end
+          end
+
+          def compression
+            result = super
+
+            if bundle_cache_dir
+              case result.extension
+              when "tar.gz", "tar.bz2"
+                # Append -h to compression to dereference symbolic links
+                # in tarball compression
+                result.compress_command = [
+                  result.compress_command[0], result.compress_command[1].to_s << "h"
+                ]
+              end
+            end
+
+            result
           end
         end
       end
