@@ -91,7 +91,7 @@ module Capistrano
                 # Append -h to compression to dereference symbolic links
                 # in tarball compression
                 result.compress_command = [
-                  result.compress_command[0], result.compress_command[1] << h
+                  result.compress_command[0], result.compress_command[1].to_s << "h"
                 ]
               end
             end
