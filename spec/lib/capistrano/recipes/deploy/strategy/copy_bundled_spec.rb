@@ -2,11 +2,11 @@ require 'spec_helper'
 
 describe Capistrano::Deploy::Strategy::CopyBundled do
 
-  let(:source)      { mock('source') }
-  let(:logger)      { mock('logger', :info => true, :debug => true) }
-  let(:trigger)     { mock('ConfTrigger') }
+  let(:source)      { double('source') }
+  let(:logger)      { double('logger', :info => true, :debug => true) }
+  let(:trigger)     { double('ConfTrigger') }
   let(:destination) { '/some/where/here/' }
-  let(:config) { mock('Config', :application => "captest",
+  let(:config) { double('Config', :application => "captest",
                       :releases_path => "/u/apps/test/releases",
                       :release_path => "/u/apps/test/releases/1234567890",
                       :real_revision => "154",
@@ -52,7 +52,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
   context 'with existing copy cache' do
     let(:copy_cache_dir) { '/u/tmp/copy-cache' }
     before do
-      strategy.stub!(:copy_cache => copy_cache_dir)
+      strategy.stub(:copy_cache => copy_cache_dir)
     end
 
     it 'utilises existing copy cache strategy' do
@@ -64,7 +64,7 @@ describe Capistrano::Deploy::Strategy::CopyBundled do
 
   context 'with new copy cache' do
     before do
-      strategy.stub!(:copy_cache => nil)
+      strategy.stub(:copy_cache => nil)
     end
 
     it 'initialises copy strategy' do
