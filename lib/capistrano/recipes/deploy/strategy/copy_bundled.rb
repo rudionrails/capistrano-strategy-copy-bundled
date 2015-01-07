@@ -29,6 +29,10 @@ module Capistrano
           configuration.trigger('strategy:after:bundle')
 
           logger.info "compressing repository"
+          
+          logger.info "removing excluded files from repository"
+          remove_excluded_files
+          
           configuration.trigger('strategy:before:compression')
           compress_repository
           configuration.trigger('strategy:after:compression')
