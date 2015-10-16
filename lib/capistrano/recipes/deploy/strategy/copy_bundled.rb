@@ -66,7 +66,7 @@ module Capistrano
             run_locally "cd #{destination} && #{bundle_cmd} install #{args.join(' ').strip}"
 
             logger.info "packaging gems for bundler in #{destination}..."
-            run_locally "cd #{destination} && #{bundle_cmd} package --all"
+            run_locally "cd #{destination} && #{bundle_cmd} package --all --gemfile #{File.join(destination, bundle_gemfile)}"
           end
         end
       end
